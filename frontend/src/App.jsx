@@ -2,142 +2,153 @@ import React, { useState } from "react";
 
 const App = () => {
   const [inputText, setInputText] = useState("");
-  const [file, setFile] = useState(null);
-  const [response, setResponse] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [pdfFile, setPdfFile] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
+  const [response, setResponse] = useState(null);
+  const [error, setError] = useState("");
 
-  // Handle file input
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
+  const BACKEND_URL = "https://fake-news-backend-2vkq.onrender.com.";
+
+  // Submit text
+  const handleTextSubmit = async () => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/analyze_text`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: inputText }),
+      });
+      const data = await res.json();
+      setResponse(data);
+      setError("");
+    } catch (err) {
+      setError("⚠️ Error connecting to backend.");
+    }
   };
 
-  // Handle submit (connects to backend)
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!inputText && !file) return;
-
-    setLoading(true);
+  // Submit PDF
+  const handlePdfSubmit = async () => {
     const formData = new FormData();
-    formData.append("inputText", inputText);
-    if (file) formData.append("file", file);
-
+    formData.append("file", pdfFile);
     try {
-      const res = await fetch(
-        "https://fake-news-backend-2vkq.onrender.com/api/process",
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
+      const res = await fetch(`${BACKEND_URL}/api/analyze_pdf`, {
+        method: "POST",
+        body: formData,
+      });
       const data = await res.json();
-      setResponse(data.result || "No response");
-    } catch (error) {
-      console.error(error);
-      setResponse("Error connecting to backend.");
+      setResponse(data);
+      setError("");
+    } catch (err) {
+      setError("⚠️ Error connecting to backend.");
     }
-    setLoading(false);
+  };
+
+  // Submit Image
+  const handleImageSubmit = async () => {
+    const formData = new FormData();
+    formData.append("image", imageFile);
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/analyze_image`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      setResponse(data);
+      setError("");
+    } catch (err) {
+      setError("⚠️ Error connecting to backend.");
+    }
   };
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.title}>🤖 AI Data Processor</h1>
-      <form onSubmit={handleSubmit} style={styles.form}>
-        <textarea
-          style={styles.textarea}
-          placeholder="Type your input..."
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-        />
-        <input type="file" onChange={handleFileChange} style={styles.fileInput} />
-        <button type="submit" style={styles.button}>
-          {loading ? "Processing..." : "Submit"}
-        </button>
-      </form>
-      {response && (
-        <div style={styles.responseBox}>
-          <h2 style={styles.responseTitle}>🔍 AI Response</h2>
-          <p style={styles.responseText}>{response}</p>
-        </div>
-      )}
+      <h1 style={styles.title}>🤖 AI Content Detector</h1>
+
+      {/* Text Input */}
+      <textarea
+        style={styles.textarea}
+        placeholder="Type or paste text to analyze..."
+        value={inputText}
+        onChange={(e) => setInputText(e.target.value)}
+      />
+      <button style={styles.button} onClick={handleTextSubmit}>
+        Analyze Text
+      </button>
+
+      {/* PDF Upload */}
+      <input
+        type="file"
+        accept="application/pdf"
+        onChange={(e) => setPdfFile(e.target.files[0])}
+        style={styles.input}
+      />
+      <button style={styles.button} onClick={handlePdfSubmit}>
+        Analyze PDF
+      </button>
+
+      {/* Image Upload */}
+      <input
+        type="file"
+        accept="image/*"
+        onChange={(e) => setImageFile(e.target.files[0])}
+        style={styles.input}
+      />
+      <button style={styles.button} onClick={handleImageSubmit}>
+        Analyze Image
+      </button>
+
+      {/* Response Area */}
+      <div style={styles.responseBox}>
+        {error && <p style={{ color: "red" }}>{error}</p>}
+        {response && <pre>{JSON.stringify(response, null, 2)}</pre>}
+      </div>
     </div>
   );
 };
 
-// Dark & Tech-Inspired Theme Styles
 const styles = {
   container: {
+    backgroundColor: "#0a0f1a",
+    color: "#fff",
     minHeight: "100vh",
-    background: "linear-gradient(135deg, #0f0f1c, #1a1a2e)",
-    color: "#e0e0e0",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    padding: "40px",
-    fontFamily: "'Roboto Mono', monospace",
+    padding: "20px",
+    fontFamily: "Arial, sans-serif",
   },
   title: {
-    fontSize: "2.5rem",
-    color: "#00f5ff",
-    marginBottom: "30px",
-    textShadow: "0px 0px 12px #00f5ff",
-  },
-  form: {
-    background: "rgba(20, 20, 35, 0.9)",
-    padding: "25px",
-    borderRadius: "12px",
-    border: "1px solid #00f5ff",
-    boxShadow: "0px 0px 20px rgba(0, 245, 255, 0.4)",
-    display: "flex",
-    flexDirection: "column",
-    width: "100%",
-    maxWidth: "600px",
-    gap: "15px",
+    fontSize: "2rem",
+    textAlign: "center",
+    marginBottom: "20px",
+    color: "#00d9ff",
   },
   textarea: {
-    background: "#111122",
-    color: "#e0e0e0",
-    border: "1px solid #00f5ff",
+    width: "100%",
+    height: "100px",
+    marginBottom: "10px",
+    padding: "10px",
     borderRadius: "8px",
-    padding: "12px",
-    fontSize: "1rem",
-    outline: "none",
-    resize: "none",
-    minHeight: "120px",
+    border: "1px solid #00d9ff",
+    backgroundColor: "#1a2233",
+    color: "#fff",
   },
-  fileInput: {
-    color: "#00f5ff",
+  input: {
+    margin: "10px 0",
+    display: "block",
   },
   button: {
-    background: "linear-gradient(90deg, #00f5ff, #0088ff)",
-    color: "#0f0f1c",
-    border: "none",
-    padding: "12px 20px",
+    padding: "10px 20px",
+    margin: "5px 0",
     borderRadius: "8px",
+    border: "none",
+    backgroundColor: "#00d9ff",
+    color: "#000",
     cursor: "pointer",
-    fontSize: "1rem",
     fontWeight: "bold",
-    boxShadow: "0px 0px 15px rgba(0, 245, 255, 0.6)",
-    transition: "all 0.3s ease",
   },
   responseBox: {
-    marginTop: "30px",
-    padding: "20px",
-    borderRadius: "12px",
-    border: "1px solid #8a2be2",
-    background: "rgba(30, 20, 50, 0.9)",
-    boxShadow: "0px 0px 15px rgba(138, 43, 226, 0.4)",
-    width: "100%",
-    maxWidth: "600px",
-  },
-  responseTitle: {
-    fontSize: "1.5rem",
-    marginBottom: "10px",
-    color: "#8a2be2",
-    textShadow: "0px 0px 10px #8a2be2",
-  },
-  responseText: {
-    fontSize: "1rem",
-    color: "#e0e0e0",
+    marginTop: "20px",
+    padding: "15px",
+    borderRadius: "8px",
+    backgroundColor: "#111827",
+    whiteSpace: "pre-wrap",
   },
 };
 
